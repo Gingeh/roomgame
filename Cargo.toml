@@ -5,4 +5,5 @@ edition = "2021"
 
 [dependencies]
 bevy = "0.8"
+bevy-inspector-egui = "0.13"
 iyes_loopless = "0.8"

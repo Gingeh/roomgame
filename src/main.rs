@@ -1,6 +1,7 @@
 use std::f32::consts::PI;
 
 use bevy::prelude::{shape::Box, *};
+use bevy_inspector_egui::WorldInspectorPlugin;
 
 #[derive(Component)]
 struct Desk;
@@ -8,6 +9,7 @@ struct Desk;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
+        .add_plugin(WorldInspectorPlugin::new())
         .add_startup_system(setup)
         .run();
 }
