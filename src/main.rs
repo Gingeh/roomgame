@@ -6,6 +6,9 @@ use bevy_inspector_egui::WorldInspectorPlugin;
 #[derive(Component)]
 struct Desk;
 
+#[derive(Component)]
+struct Lamp;
+
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
@@ -31,5 +34,17 @@ fn setup(
                 .with_rotation(Quat::from_rotation_x(PI / 6.0)),
             ..Default::default()
         })
-        .insert(Desk);
+        .insert(Desk)
+        .with_children(|parent| {
+            parent.spawn_bundle(SpotLightBundle {
+                spot_light: SpotLight {
+                    intensity: 100.0,
+                    outer_angle: 0.3,
+                    ..Default::default()
+                },
+                transform: Transform::from_translation(Vec3::new(-1.0, 1.0, -0.2))
+                    .looking_at(Vec3::new(0.0, 0.5, 0.0), Vec3::Y),
+                ..Default::default()
+            }).insert(Lamp);
+        });
 }
