@@ -49,6 +49,8 @@ fn setup(
                 spot_light: SpotLight {
                     intensity: 100.0,
                     outer_angle: 0.3,
+                    shadows_enabled: true,
+                    shadow_depth_bias: 0.0,
                     ..Default::default()
                 },
                 transform: Transform::from_translation(Vec3::new(-1.0, 1.0, -0.2))
