@@ -5,5 +5,8 @@ edition = "2021"
 
 [dependencies]
 bevy = "0.8"
-bevy-inspector-egui = "0.13"
+bevy-inspector-egui = { version = "0.13", optional = true }
 iyes_loopless = "0.8"
+
+[features]
+inspector = ["dep:bevy-inspector-egui"]

@@ -1,6 +1,8 @@
 use std::f32::consts::PI;
 
 use bevy::prelude::{shape::Box, *};
+
+#[cfg(feature = "inspector")]
 use bevy_inspector_egui::WorldInspectorPlugin;
 
 /// Marker component for the desk/panel thing
@@ -21,13 +23,15 @@ enum Button {
 }
 
 fn main() {
-    App::new()
-        .insert_resource(ClearColor(Color::BLACK))
+    let mut app = App::new();
+    app.insert_resource(ClearColor(Color::BLACK))
         .add_plugins(DefaultPlugins)
-        //TODO: Feature gate the inpector
-        .add_plugin(WorldInspectorPlugin::new())
-        .add_startup_system(setup)
-        .run();
+        .add_startup_system(setup);
+
+    #[cfg(feature = "inspector")]
+    app.add_plugin(WorldInspectorPlugin::new());
+
+    app.run();
 }
 
 /// Spawn the camera and panel
