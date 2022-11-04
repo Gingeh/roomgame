@@ -9,6 +9,14 @@ struct Desk;
 #[derive(Component)]
 struct Lamp;
 
+#[derive(Component)]
+enum Button {
+    Red,
+    Green,
+    Blue,
+    Yellow,
+}
+
 fn main() {
     App::new()
         .insert_resource(ClearColor(Color::BLACK))
@@ -47,5 +55,38 @@ fn setup(
                     .looking_at(Vec3::new(0.0, 0.5, 0.0), Vec3::Y),
                 ..Default::default()
             }).insert(Lamp);
+
+            //TODO: Can this be refactored?
+            parent.spawn_bundle(PbrBundle {
+                mesh: meshes.add(Box::new(1.0, 1.0, 1.0).into()),
+                material: materials.add(Color::RED.into()),
+                transform: Transform::from_translation(Vec3::new(-0.12, 0.45, -0.12))
+                    .with_scale(Vec3::splat(0.2)),
+                ..Default::default()
+            }).insert(Button::Red);
+
+            parent.spawn_bundle(PbrBundle {
+                mesh: meshes.add(Box::new(1.0, 1.0, 1.0).into()),
+                material: materials.add(Color::GREEN.into()),
+                transform: Transform::from_translation(Vec3::new(-0.12, 0.45, 0.12))
+                    .with_scale(Vec3::splat(0.2)),
+                ..Default::default()
+            }).insert(Button::Green);
+
+            parent.spawn_bundle(PbrBundle {
+                mesh: meshes.add(Box::new(1.0, 1.0, 1.0).into()),
+                material: materials.add(Color::BLUE.into()),
+                transform: Transform::from_translation(Vec3::new(0.12, 0.45, -0.12))
+                    .with_scale(Vec3::splat(0.2)),
+                ..Default::default()
+            }).insert(Button::Blue);
+
+            parent.spawn_bundle(PbrBundle {
+                mesh: meshes.add(Box::new(1.0, 1.0, 1.0).into()),
+                material: materials.add(Color::YELLOW.into()),
+                transform: Transform::from_translation(Vec3::new(0.12, 0.45, 0.12))
+                    .with_scale(Vec3::splat(0.2)),
+                ..Default::default()
+            }).insert(Button::Yellow);
         });
 }
