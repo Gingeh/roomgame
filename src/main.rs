@@ -53,51 +53,61 @@ fn setup(
         .insert(Desk)
         .with_children(|parent| {
             // Desk lamp
-            parent.spawn_bundle(SpotLightBundle {
-                spot_light: SpotLight {
-                    intensity: 100.0,
-                    outer_angle: 0.3,
-                    shadows_enabled: true,
-                    shadow_depth_bias: 0.0,
+            parent
+                .spawn_bundle(SpotLightBundle {
+                    spot_light: SpotLight {
+                        intensity: 100.0,
+                        outer_angle: 0.3,
+                        shadows_enabled: true,
+                        shadow_depth_bias: 0.0,
+                        ..Default::default()
+                    },
+                    transform: Transform::from_translation(Vec3::new(-1.0, 1.0, -0.2))
+                        .looking_at(Vec3::new(0.0, 0.5, 0.0), Vec3::Y),
                     ..Default::default()
-                },
-                transform: Transform::from_translation(Vec3::new(-1.0, 1.0, -0.2))
-                    .looking_at(Vec3::new(0.0, 0.5, 0.0), Vec3::Y),
-                ..Default::default()
-            }).insert(Lamp);
+                })
+                .insert(Lamp);
 
             // Buttons
             //TODO: Can this be refactored?
-            parent.spawn_bundle(PbrBundle {
-                mesh: meshes.add(Box::new(1.0, 1.0, 1.0).into()),
-                material: materials.add(Color::RED.into()),
-                transform: Transform::from_translation(Vec3::new(-0.12, 0.45, -0.12))
-                    .with_scale(Vec3::splat(0.2)),
-                ..Default::default()
-            }).insert(Button::Red);
+            parent
+                .spawn_bundle(PbrBundle {
+                    mesh: meshes.add(Box::new(1.0, 1.0, 1.0).into()),
+                    material: materials.add(Color::RED.into()),
+                    transform: Transform::from_translation(Vec3::new(-0.12, 0.45, -0.12))
+                        .with_scale(Vec3::splat(0.2)),
+                    ..Default::default()
+                })
+                .insert(Button::Red);
 
-            parent.spawn_bundle(PbrBundle {
-                mesh: meshes.add(Box::new(1.0, 1.0, 1.0).into()),
-                material: materials.add(Color::GREEN.into()),
-                transform: Transform::from_translation(Vec3::new(-0.12, 0.45, 0.12))
-                    .with_scale(Vec3::splat(0.2)),
-                ..Default::default()
-            }).insert(Button::Green);
+            parent
+                .spawn_bundle(PbrBundle {
+                    mesh: meshes.add(Box::new(1.0, 1.0, 1.0).into()),
+                    material: materials.add(Color::GREEN.into()),
+                    transform: Transform::from_translation(Vec3::new(-0.12, 0.45, 0.12))
+                        .with_scale(Vec3::splat(0.2)),
+                    ..Default::default()
+                })
+                .insert(Button::Green);
 
-            parent.spawn_bundle(PbrBundle {
-                mesh: meshes.add(Box::new(1.0, 1.0, 1.0).into()),
-                material: materials.add(Color::BLUE.into()),
-                transform: Transform::from_translation(Vec3::new(0.12, 0.45, -0.12))
-                    .with_scale(Vec3::splat(0.2)),
-                ..Default::default()
-            }).insert(Button::Blue);
+            parent
+                .spawn_bundle(PbrBundle {
+                    mesh: meshes.add(Box::new(1.0, 1.0, 1.0).into()),
+                    material: materials.add(Color::BLUE.into()),
+                    transform: Transform::from_translation(Vec3::new(0.12, 0.45, -0.12))
+                        .with_scale(Vec3::splat(0.2)),
+                    ..Default::default()
+                })
+                .insert(Button::Blue);
 
-            parent.spawn_bundle(PbrBundle {
-                mesh: meshes.add(Box::new(1.0, 1.0, 1.0).into()),
-                material: materials.add(Color::YELLOW.into()),
-                transform: Transform::from_translation(Vec3::new(0.12, 0.45, 0.12))
-                    .with_scale(Vec3::splat(0.2)),
-                ..Default::default()
-            }).insert(Button::Yellow);
+            parent
+                .spawn_bundle(PbrBundle {
+                    mesh: meshes.add(Box::new(1.0, 1.0, 1.0).into()),
+                    material: materials.add(Color::YELLOW.into()),
+                    transform: Transform::from_translation(Vec3::new(0.12, 0.45, 0.12))
+                        .with_scale(Vec3::splat(0.2)),
+                    ..Default::default()
+                })
+                .insert(Button::Yellow);
         });
 }
