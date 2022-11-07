@@ -1,9 +1,11 @@
-use std::f32::consts::PI;
+use std::{f32::consts::PI, time::Duration};
 
 use bevy::prelude::{shape::Box, *};
 
 #[cfg(feature = "inspector")]
 use bevy_inspector_egui::WorldInspectorPlugin;
+use iyes_loopless::prelude::*;
+use rand::{distributions::Standard, prelude::Distribution, Rng};
 
 /// Marker component for the desk/panel thing
 #[derive(Component)]
@@ -22,6 +24,17 @@ enum Button {
     Yellow,
 }
 
+impl Distribution<Button> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Button {
+        match rng.gen_range(0..=3) {
+            0 => Button::Red,
+            1 => Button::Green,
+            2 => Button::Blue,
+            _ => Button::Yellow,
+        }
+    }
+}
+
 /// Event for pressing and lighting up buttons
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum ButtonEvent {
@@ -37,6 +50,24 @@ enum ButtonState {
     Lit { changed: bool, timer: f32 },
 }
 
+/// The current state of the game
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+enum SimonState {
+    MonkeySee, // Showing the pattern
+    MonkeyDo,  // Waiting for the player
+}
+
+/// The pattern to remember
+#[derive(Default)]
+struct Pattern(Vec<Button>);
+
+/// Progress along the pattern
+#[derive(Default)]
+struct Progress(usize);
+
+// I don't like using strings for identifiers
+const FIXEDUPDATE: &str = "FixedUpdate";
+
 fn main() {
     let mut app = App::new();
     app.insert_resource(ClearColor(Color::BLACK))
@@ -45,7 +76,17 @@ fn main() {
         .add_startup_system(setup)
         .add_system(button_event_handler)
         .add_system(button_state_manager)
-        .add_system(button_controller);
+        .add_system(button_controller)
+        .init_resource::<Pattern>()
+        .init_resource::<Progress>()
+        .add_loopless_state(SimonState::MonkeySee)
+        .add_enter_system(SimonState::MonkeySee, update_pattern)
+        .add_fixed_timestep(Duration::from_secs_f32(1.2), FIXEDUPDATE)
+        .add_fixed_timestep_system(
+            FIXEDUPDATE,
+            0,
+            show_button.run_in_state(SimonState::MonkeySee),
+        );
 
     #[cfg(feature = "inspector")]
     app.add_plugin(WorldInspectorPlugin::new());
@@ -144,7 +185,7 @@ fn button_event_handler(
     mut event_reader: EventReader<ButtonEvent>,
     mut buttons: Query<(&Button, &mut ButtonState)>,
 ) {
-    if let Some(event) = event_reader.iter().next() {
+    for event in event_reader.iter() {
         match event {
             ButtonEvent::Pressed(button) => {
                 for (_, mut state) in buttons.iter_mut().filter(|(b, _)| *b == button) {
@@ -205,7 +246,7 @@ fn button_controller(
         match *state {
             ButtonState::Inactive { changed: true } => {
                 material.emissive = Color::BLACK;
-                transform.translation.y += 0.02;
+                transform.translation.y += 0.02; //FIXME: Don't move after being lit
                 *state = ButtonState::Inactive { changed: false }
             }
             ButtonState::Pressed {
@@ -231,5 +272,25 @@ fn button_controller(
             }
             _ => {}
         }
+    }
+}
+
+fn update_pattern(mut pattern: ResMut<Pattern>) {
+    let button: Button = rand::random();
+    pattern.0.push(button);
+}
+
+fn show_button(
+    mut commands: Commands,
+    mut progress: ResMut<Progress>,
+    pattern: Res<Pattern>,
+    mut button_event_writer: EventWriter<ButtonEvent>,
+) {
+    if let Some(button) = pattern.0.get(progress.0) {
+        button_event_writer.send(ButtonEvent::Lit(*button));
+        progress.0 += 1;
+    } else {
+        progress.0 = 0;
+        commands.insert_resource(NextState(SimonState::MonkeyDo));
     }
 }
