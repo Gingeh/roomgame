@@ -74,15 +74,27 @@ const FIXEDUPDATE: &str = "FixedUpdate";
 
 fn main() {
     let mut app = App::new();
-    app.insert_resource(ClearColor(Color::BLACK))
+    app
+        // Black background
+        .insert_resource(ClearColor(Color::BLACK))
+
+        // Default plugins (useful!)
         .add_plugins(DefaultPlugins)
-        .add_event::<ButtonEvent>()
+
+        // Spawn stuff
         .add_startup_system(setup)
+
+        // Manage the buttons
+        .add_event::<ButtonEvent>()
         .add_system(button_event_handler)
         .add_system(button_state_manager)
         .add_system(button_controller)
+
+        // Store the pattern as a resource
         .init_resource::<Pattern>()
         .init_resource::<Progress>()
+
+        // The "Monkey See" state
         .add_loopless_state(SimonState::MonkeySee)
         .add_enter_system(SimonState::MonkeySee, update_pattern)
         .add_fixed_timestep(Duration::from_secs_f32(1.2), FIXEDUPDATE)
@@ -92,13 +104,14 @@ fn main() {
             show_button.run_in_state(SimonState::MonkeySee),
         );
 
+    // Include an inspector if the `inspector` feature is enabled
     #[cfg(feature = "inspector")]
     app.add_plugin(WorldInspectorPlugin::new());
 
     app.run();
 }
 
-/// Spawn the camera and panel
+/// Spawns the camera and panel
 fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -247,6 +260,7 @@ fn button_state_manager(
     }
 }
 
+/// Animates the buttons
 fn button_controller(
     mut buttons: Query<(
         &ButtonState,
@@ -282,11 +296,13 @@ fn button_controller(
     }
 }
 
+/// Adds a random button to the pattern
 fn update_pattern(mut pattern: ResMut<Pattern>) {
     let button: Button = rand::random();
     pattern.0.push(button);
 }
 
+/// Shows the next button in the pattern or ends the "Monkey See" state
 fn show_button(
     mut commands: Commands,
     mut progress: ResMut<Progress>,
