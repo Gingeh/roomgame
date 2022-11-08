@@ -1,4 +1,4 @@
-use std::{f32::consts::PI, time::Duration};
+use std::{f32::consts::PI, mem, time::Duration};
 
 use bevy::prelude::{shape::Box, *};
 
@@ -42,13 +42,17 @@ enum ButtonEvent {
     Lit(Button),
 }
 
-/// Stores the button's state, timer and whether it changed recently
-#[derive(Component)]
+/// Stores the button's state and timer
+#[derive(Component, Clone, Copy)]
 enum ButtonState {
-    Inactive { changed: bool },
-    Pressed { changed: bool, timer: f32 },
-    Lit { changed: bool, timer: f32 },
+    Inactive,
+    Pressed { timer: f32 },
+    Lit { timer: f32 },
 }
+
+/// Stores the button's previous state
+#[derive(Component)]
+struct PreviousButtonState(ButtonState);
 
 /// The current state of the game
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -142,7 +146,8 @@ fn setup(
                         .with_scale(Vec3::splat(0.2)),
                     ..Default::default()
                 })
-                .insert(ButtonState::Inactive { changed: false })
+                .insert(ButtonState::Inactive)
+                .insert(PreviousButtonState(ButtonState::Inactive))
                 .insert(Button::Red);
 
             parent
@@ -153,7 +158,8 @@ fn setup(
                         .with_scale(Vec3::splat(0.2)),
                     ..Default::default()
                 })
-                .insert(ButtonState::Inactive { changed: false })
+                .insert(ButtonState::Inactive)
+                .insert(PreviousButtonState(ButtonState::Inactive))
                 .insert(Button::Green);
 
             parent
@@ -164,7 +170,8 @@ fn setup(
                         .with_scale(Vec3::splat(0.2)),
                     ..Default::default()
                 })
-                .insert(ButtonState::Inactive { changed: false })
+                .insert(ButtonState::Inactive)
+                .insert(PreviousButtonState(ButtonState::Inactive))
                 .insert(Button::Blue);
 
             parent
@@ -175,7 +182,8 @@ fn setup(
                         .with_scale(Vec3::splat(0.2)),
                     ..Default::default()
                 })
-                .insert(ButtonState::Inactive { changed: false })
+                .insert(ButtonState::Inactive)
+                .insert(PreviousButtonState(ButtonState::Inactive))
                 .insert(Button::Yellow);
         });
 }
@@ -183,24 +191,24 @@ fn setup(
 /// Handles `ButtonEvent`s and sets `ButtonState`s
 fn button_event_handler(
     mut event_reader: EventReader<ButtonEvent>,
-    mut buttons: Query<(&Button, &mut ButtonState)>,
+    mut buttons: Query<(&Button, &mut ButtonState, &mut PreviousButtonState)>,
 ) {
     for event in event_reader.iter() {
         match event {
             ButtonEvent::Pressed(button) => {
-                for (_, mut state) in buttons.iter_mut().filter(|(b, _)| *b == button) {
-                    *state = ButtonState::Pressed {
-                        timer: 1.0,
-                        changed: true,
-                    };
+                for (_, mut state, mut previous) in
+                    buttons.iter_mut().filter(|(b, _, _)| *b == button)
+                {
+                    *previous = PreviousButtonState(*state);
+                    *state = ButtonState::Pressed { timer: 1.0 };
                 }
             }
             ButtonEvent::Lit(button) => {
-                for (_, mut state) in buttons.iter_mut().filter(|(b, _)| *b == button) {
-                    *state = ButtonState::Lit {
-                        timer: 1.0,
-                        changed: true,
-                    };
+                for (_, mut state, mut previous) in
+                    buttons.iter_mut().filter(|(b, _, _)| *b == button)
+                {
+                    *previous = PreviousButtonState(*state);
+                    *state = ButtonState::Lit { timer: 1.0 };
                 }
             }
         }
@@ -208,28 +216,31 @@ fn button_event_handler(
 }
 
 /// Manages `ButtonState`s and their timers
-fn button_state_manager(mut buttons: Query<&mut ButtonState>, time: Res<Time>) {
-    for mut state in buttons.iter_mut() {
+fn button_state_manager(
+    mut buttons: Query<(&mut ButtonState, &mut PreviousButtonState)>,
+    time: Res<Time>,
+) {
+    for (mut state, mut previous) in buttons.iter_mut() {
         match *state {
-            ButtonState::Inactive { changed: _ } => {}
-            ButtonState::Pressed { timer, changed } => {
+            ButtonState::Inactive => {}
+            ButtonState::Pressed { timer } => {
                 if timer > 0.0 {
                     *state = ButtonState::Pressed {
                         timer: timer - time.delta_seconds(),
-                        changed,
                     }
                 } else {
-                    *state = ButtonState::Inactive { changed: true }
+                    *previous = PreviousButtonState(*state);
+                    *state = ButtonState::Inactive;
                 }
             }
-            ButtonState::Lit { timer, changed } => {
+            ButtonState::Lit { timer } => {
                 if timer > 0.0 {
                     *state = ButtonState::Lit {
                         timer: timer - time.delta_seconds(),
-                        changed,
                     }
                 } else {
-                    *state = ButtonState::Inactive { changed: true }
+                    *previous = PreviousButtonState(*state);
+                    *state = ButtonState::Inactive;
                 }
             }
         }
@@ -237,40 +248,36 @@ fn button_state_manager(mut buttons: Query<&mut ButtonState>, time: Res<Time>) {
 }
 
 fn button_controller(
-    mut buttons: Query<(&mut ButtonState, &mut Transform, &Handle<StandardMaterial>)>,
+    mut buttons: Query<(
+        &ButtonState,
+        &mut PreviousButtonState,
+        &mut Transform,
+        &Handle<StandardMaterial>,
+    )>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    for (mut state, mut transform, material_handle) in buttons.iter_mut() {
+    for (state, mut previous, mut transform, material_handle) in buttons.iter_mut() {
         let material = materials.get_mut(material_handle).unwrap();
 
-        match *state {
-            ButtonState::Inactive { changed: true } => {
-                material.emissive = Color::BLACK;
-                transform.translation.y += 0.02; //FIXME: Don't move after being lit
-                *state = ButtonState::Inactive { changed: false }
+        if mem::discriminant(&previous.0) != mem::discriminant(state) {
+            match *state {
+                ButtonState::Inactive => {
+                    material.emissive = Color::BLACK;
+                    if matches!(previous.0, ButtonState::Pressed { .. }) {
+                        transform.translation.y += 0.02;
+                    }
+                    *previous = PreviousButtonState(*state);
+                }
+                ButtonState::Pressed { .. } => {
+                    material.emissive = material.base_color;
+                    transform.translation.y -= 0.02;
+                    *previous = PreviousButtonState(*state);
+                }
+                ButtonState::Lit { .. } => {
+                    material.emissive = material.base_color;
+                    *previous = PreviousButtonState(*state);
+                }
             }
-            ButtonState::Pressed {
-                timer,
-                changed: true,
-            } => {
-                material.emissive = material.base_color;
-                transform.translation.y -= 0.02;
-                *state = ButtonState::Pressed {
-                    timer,
-                    changed: false,
-                };
-            }
-            ButtonState::Lit {
-                timer,
-                changed: true,
-            } => {
-                material.emissive = material.base_color;
-                *state = ButtonState::Lit {
-                    timer,
-                    changed: false,
-                };
-            }
-            _ => {}
         }
     }
 }
