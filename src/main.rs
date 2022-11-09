@@ -111,7 +111,7 @@ fn main() {
         // The "Monkey See" state
         .add_loopless_state(SimonState::MonkeySee)
         .add_enter_system(SimonState::MonkeySee, update_pattern)
-        .add_fixed_timestep(Duration::from_secs_f32(1.2), FIXEDUPDATE)
+        .add_fixed_timestep(Duration::from_secs_f32(1.0), FIXEDUPDATE)
         .add_fixed_timestep_system(
             FIXEDUPDATE,
             0,
@@ -234,7 +234,7 @@ fn button_event_handler(
                     buttons.iter_mut().filter(|(b, _, _)| *b == button)
                 {
                     *previous = PreviousButtonState(*state);
-                    *state = ButtonState::Pressed { timer: 1.0 };
+                    *state = ButtonState::Pressed { timer: 0.5 };
                 }
             }
             ButtonEvent::Lit(button) => {
@@ -242,7 +242,7 @@ fn button_event_handler(
                     buttons.iter_mut().filter(|(b, _, _)| *b == button)
                 {
                     *previous = PreviousButtonState(*state);
-                    *state = ButtonState::Lit { timer: 1.0 };
+                    *state = ButtonState::Lit { timer: 0.8 };
                 }
             }
         }
