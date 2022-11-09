@@ -119,7 +119,8 @@ fn main() {
         )
 
         // The "Monkey Do" state
-        .add_system(press_buttons.run_in_state(SimonState::MonkeyDo));
+        .add_system(press_buttons.run_in_state(SimonState::MonkeyDo))
+        .add_system(validate_buttons.run_in_state(SimonState::MonkeyDo));
 
     // Include an inspector if the `inspector` feature is enabled
     #[cfg(feature = "inspector")]
@@ -346,6 +347,26 @@ fn press_buttons(
     for (interaction, button) in interactions.iter() {
         if *interaction == Interaction::Clicked {
             button_event_writer.send(ButtonEvent::Pressed(*button))
+        }
+    }
+}
+
+//FIXME: Buttons don't pop back out if they are the first and last in the pattern
+fn validate_buttons(mut commands: Commands, mut event_reader: EventReader<ButtonEvent>, mut pattern: ResMut<Pattern>, mut progress: ResMut<Progress>) {
+    for event in event_reader.iter() {
+        if let ButtonEvent::Pressed(button) = event {
+            if *button == pattern.0[progress.0] {
+                if progress.0 == pattern.0.len() - 1 {
+                    progress.0 = 0;
+                    commands.insert_resource(NextState(SimonState::MonkeySee)); //TODO: Delay before this
+                } else {
+                    progress.0 += 1;
+                }
+            } else {
+                progress.0 = 0;
+                pattern.0 = Vec::new();
+                commands.insert_resource(NextState(SimonState::MonkeySee)); //TODO: Delay before this
+            }
         }
     }
 }
