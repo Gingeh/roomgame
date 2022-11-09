@@ -1,9 +1,13 @@
 use std::{f32::consts::PI, mem, time::Duration};
 
-use bevy::prelude::{shape::Box, *};
+use bevy::{
+    prelude::{shape::Box, *},
+    ui::FocusPolicy,
+};
 
 #[cfg(feature = "inspector")]
 use bevy_inspector_egui::WorldInspectorPlugin;
+use bevy_mod_picking::*;
 use iyes_loopless::prelude::*;
 use rand::{distributions::Standard, prelude::Distribution, Rng};
 
@@ -54,6 +58,13 @@ enum ButtonState {
 #[derive(Component)]
 struct PreviousButtonState(ButtonState);
 
+/// `PickableBundle` without the other stuff
+#[derive(Bundle, Default)]
+struct ClickableBundle {
+    pickable_mesh: PickableMesh,
+    interaction: Interaction,
+    focus_policy: FocusPolicy,
+}
 /// The current state of the game
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum SimonState {
@@ -81,6 +92,9 @@ fn main() {
         // Default plugins (useful!)
         .add_plugins(DefaultPlugins)
 
+        // Mouse support
+        .add_plugins(DefaultPickingPlugins)
+
         // Spawn stuff
         .add_startup_system(setup)
 
@@ -102,7 +116,10 @@ fn main() {
             FIXEDUPDATE,
             0,
             show_button.run_in_state(SimonState::MonkeySee),
-        );
+        )
+
+        // The "Monkey Do" state
+        .add_system(press_buttons.run_in_state(SimonState::MonkeyDo));
 
     // Include an inspector if the `inspector` feature is enabled
     #[cfg(feature = "inspector")]
@@ -118,9 +135,9 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     // Camera
-    commands.spawn_bundle(Camera3dBundle {
-        ..Default::default()
-    });
+    commands
+        .spawn_bundle(Camera3dBundle::default())
+        .insert_bundle(PickingCameraBundle::default());
 
     // Desk
     commands
@@ -159,6 +176,7 @@ fn setup(
                         .with_scale(Vec3::splat(0.2)),
                     ..Default::default()
                 })
+                .insert_bundle(ClickableBundle::default())
                 .insert(ButtonState::Inactive)
                 .insert(PreviousButtonState(ButtonState::Inactive))
                 .insert(Button::Red);
@@ -171,6 +189,7 @@ fn setup(
                         .with_scale(Vec3::splat(0.2)),
                     ..Default::default()
                 })
+                .insert_bundle(ClickableBundle::default())
                 .insert(ButtonState::Inactive)
                 .insert(PreviousButtonState(ButtonState::Inactive))
                 .insert(Button::Green);
@@ -183,6 +202,7 @@ fn setup(
                         .with_scale(Vec3::splat(0.2)),
                     ..Default::default()
                 })
+                .insert_bundle(ClickableBundle::default())
                 .insert(ButtonState::Inactive)
                 .insert(PreviousButtonState(ButtonState::Inactive))
                 .insert(Button::Blue);
@@ -195,6 +215,7 @@ fn setup(
                         .with_scale(Vec3::splat(0.2)),
                     ..Default::default()
                 })
+                .insert_bundle(ClickableBundle::default())
                 .insert(ButtonState::Inactive)
                 .insert(PreviousButtonState(ButtonState::Inactive))
                 .insert(Button::Yellow);
@@ -315,5 +336,16 @@ fn show_button(
     } else {
         progress.0 = 0;
         commands.insert_resource(NextState(SimonState::MonkeyDo));
+    }
+}
+
+fn press_buttons(
+    interactions: Query<(&Interaction, &Button), Changed<Interaction>>,
+    mut button_event_writer: EventWriter<ButtonEvent>,
+) {
+    for (interaction, button) in interactions.iter() {
+        if *interaction == Interaction::Clicked {
+            button_event_writer.send(ButtonEvent::Pressed(*button))
+        }
     }
 }
