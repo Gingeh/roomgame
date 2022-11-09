@@ -72,6 +72,13 @@ enum SimonState {
     MonkeyDo,  // Waiting for the player
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+enum SimonEvent {
+    Success,
+    Next,
+    Failure,
+}
+
 /// The pattern to remember
 #[derive(Default)]
 struct Pattern(Vec<Button>);
@@ -119,8 +126,10 @@ fn main() {
         )
 
         // The "Monkey Do" state
+        .add_event::<SimonEvent>()
         .add_system(press_buttons.run_in_state(SimonState::MonkeyDo))
-        .add_system(validate_buttons.run_in_state(SimonState::MonkeyDo));
+        .add_system(validate_buttons.run_in_state(SimonState::MonkeyDo))
+        .add_system(game_event_handler.run_in_state(SimonState::MonkeyDo));
 
     // Include an inspector if the `inspector` feature is enabled
     #[cfg(feature = "inspector")]
@@ -351,22 +360,50 @@ fn press_buttons(
     }
 }
 
-//FIXME: Buttons don't pop back out if they are the first and last in the pattern
-fn validate_buttons(mut commands: Commands, mut event_reader: EventReader<ButtonEvent>, mut pattern: ResMut<Pattern>, mut progress: ResMut<Progress>) {
+/// Handles button events during MonkeyDo
+fn validate_buttons(
+    mut event_writer: EventWriter<SimonEvent>,
+    mut event_reader: EventReader<ButtonEvent>,
+    pattern: Res<Pattern>,
+    progress: Res<Progress>,
+) {
     for event in event_reader.iter() {
         if let ButtonEvent::Pressed(button) = event {
             if *button == pattern.0[progress.0] {
                 if progress.0 == pattern.0.len() - 1 {
-                    progress.0 = 0;
-                    commands.insert_resource(NextState(SimonState::MonkeySee)); //TODO: Delay before this
+                    event_writer.send(SimonEvent::Success);
                 } else {
-                    progress.0 += 1;
+                    event_writer.send(SimonEvent::Next);
                 }
             } else {
+                event_writer.send(SimonEvent::Failure);
+            }
+        }
+    }
+}
+
+//FIXME: Buttons don't pop back out if they are the first and last in the pattern
+/// Handles game events to change states and stuff
+fn game_event_handler(
+    mut commands: Commands,
+    mut event_reader: EventReader<SimonEvent>,
+    mut progress: ResMut<Progress>,
+    mut pattern: ResMut<Pattern>,
+) {
+    for event in event_reader.iter() {
+        match event {
+            SimonEvent::Success => {
+                progress.0 = 0;
+                commands.insert_resource(NextState(SimonState::MonkeySee)); //TODO: Delay before this
+            },
+            SimonEvent::Next => {
+                progress.0 += 1;
+            },
+            SimonEvent::Failure => {
                 progress.0 = 0;
                 pattern.0 = Vec::new();
                 commands.insert_resource(NextState(SimonState::MonkeySee)); //TODO: Delay before this
-            }
+            },
         }
     }
 }
