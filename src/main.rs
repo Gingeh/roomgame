@@ -133,7 +133,6 @@ fn main() {
 
         // The "Monkey Do" state
         .add_event::<SimonEvent>()
-        .init_resource::<StateSwitch>()
         .add_system(press_buttons.run_in_state(SimonState::MonkeyDo))
         .add_system(validate_buttons.run_in_state(SimonState::MonkeyDo))
         .add_system(game_event_handler.run_in_state(SimonState::MonkeyDo))
