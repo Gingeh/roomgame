@@ -7,7 +7,7 @@ use bevy::{
 
 #[cfg(feature = "inspector")]
 use bevy_inspector_egui::WorldInspectorPlugin;
-use bevy_mod_picking::*;
+use bevy_mod_picking::{DefaultPickingPlugins, PickableMesh, PickingCameraBundle};
 use iyes_loopless::prelude::*;
 use rand::{distributions::Standard, prelude::Distribution, Rng};
 
@@ -72,6 +72,7 @@ enum SimonState {
     MonkeyDo,  // Waiting for the player
 }
 
+/// Event for things that happen in game
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum SimonEvent {
     Success,
@@ -79,6 +80,8 @@ enum SimonEvent {
     Failure,
 }
 
+/// Resource for ending `MonkeyDo`
+// I don't like this :(
 #[derive(Default)]
 struct StateSwitch;
 
@@ -364,12 +367,12 @@ fn press_buttons(
 ) {
     for (interaction, button) in interactions.iter() {
         if *interaction == Interaction::Clicked {
-            button_event_writer.send(ButtonEvent::Pressed(*button))
+            button_event_writer.send(ButtonEvent::Pressed(*button));
         }
     }
 }
 
-/// Handles button events during MonkeyDo
+/// Handles button events during `MonkeyDo`
 fn validate_buttons(
     mut event_writer: EventWriter<SimonEvent>,
     mut event_reader: EventReader<ButtonEvent>,
@@ -404,23 +407,20 @@ fn game_event_handler(
             SimonEvent::Success => {
                 progress.0 = 0;
                 commands.insert_resource(StateSwitch);
-            },
+            }
             SimonEvent::Next => {
                 progress.0 += 1;
-            },
+            }
             SimonEvent::Failure => {
                 progress.0 = 0;
                 pattern.0 = Vec::new();
                 commands.insert_resource(StateSwitch);
-            },
+            }
         }
     }
 }
 
-fn state_switch_event_handler(
-    mut commands: Commands,
-    state_switch: Option<Res<StateSwitch>>,
-) {
+fn state_switch_event_handler(mut commands: Commands, state_switch: Option<Res<StateSwitch>>) {
     if state_switch.is_some() {
         commands.remove_resource::<StateSwitch>();
         commands.insert_resource(NextState(SimonState::MonkeySee));
