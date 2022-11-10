@@ -79,6 +79,9 @@ enum SimonEvent {
     Failure,
 }
 
+#[derive(Default)]
+struct StateSwitch;
+
 /// The pattern to remember
 #[derive(Default)]
 struct Pattern(Vec<Button>);
@@ -127,9 +130,15 @@ fn main() {
 
         // The "Monkey Do" state
         .add_event::<SimonEvent>()
+        .init_resource::<StateSwitch>()
         .add_system(press_buttons.run_in_state(SimonState::MonkeyDo))
         .add_system(validate_buttons.run_in_state(SimonState::MonkeyDo))
-        .add_system(game_event_handler.run_in_state(SimonState::MonkeyDo));
+        .add_system(game_event_handler.run_in_state(SimonState::MonkeyDo))
+        .add_fixed_timestep_system(
+            FIXEDUPDATE,
+            0,
+            state_switch_event_handler.run_in_state(SimonState::MonkeyDo),
+        );
 
     // Include an inspector if the `inspector` feature is enabled
     #[cfg(feature = "inspector")]
@@ -394,7 +403,7 @@ fn game_event_handler(
         match event {
             SimonEvent::Success => {
                 progress.0 = 0;
-                commands.insert_resource(NextState(SimonState::MonkeySee)); //TODO: Delay before this
+                commands.insert_resource(StateSwitch);
             },
             SimonEvent::Next => {
                 progress.0 += 1;
@@ -402,8 +411,18 @@ fn game_event_handler(
             SimonEvent::Failure => {
                 progress.0 = 0;
                 pattern.0 = Vec::new();
-                commands.insert_resource(NextState(SimonState::MonkeySee)); //TODO: Delay before this
+                commands.insert_resource(StateSwitch);
             },
         }
+    }
+}
+
+fn state_switch_event_handler(
+    mut commands: Commands,
+    state_switch: Option<Res<StateSwitch>>,
+) {
+    if state_switch.is_some() {
+        commands.remove_resource::<StateSwitch>();
+        commands.insert_resource(NextState(SimonState::MonkeySee));
     }
 }
