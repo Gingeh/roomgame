@@ -429,6 +429,7 @@ fn show_button(
     }
 }
 
+/// Fires button events when buttons are clicked
 fn press_buttons(
     interactions: Query<(&Interaction, &Button), Changed<Interaction>>,
     mut button_event_writer: EventWriter<ButtonEvent>,
@@ -462,6 +463,7 @@ fn validate_buttons(
     }
 }
 
+/// Sets the progress based on game events
 fn game_event_handler(
     mut commands: Commands,
     mut event_reader: EventReader<SimonEvent>,
@@ -486,6 +488,7 @@ fn game_event_handler(
     }
 }
 
+/// Periodically checks to change to MonkeySee
 fn state_switch_event_handler(mut commands: Commands, state_switch: Option<Res<StateSwitch>>) {
     if state_switch.is_some() {
         commands.remove_resource::<StateSwitch>();
@@ -493,6 +496,7 @@ fn state_switch_event_handler(mut commands: Commands, state_switch: Option<Res<S
     }
 }
 
+/// Update the `Score` based on game events
 fn update_score(mut event_reader: EventReader<SimonEvent>, mut score: ResMut<Score>) {
     for event in event_reader.iter() {
         match event {
@@ -508,6 +512,7 @@ fn update_score(mut event_reader: EventReader<SimonEvent>, mut score: ResMut<Sco
     }
 }
 
+/// Update the `Scoreboard`'s text
 fn update_scoreboard(score: Res<Score>, mut score_text_query: Query<&mut Text, With<Scoreboard>>) {
     if score.is_changed() {
         for mut score_text in score_text_query.iter_mut() {
@@ -517,6 +522,7 @@ fn update_scoreboard(score: Res<Score>, mut score_text_query: Query<&mut Text, W
     }
 }
 
+/// Load assets
 fn load_assets(asset_server: Res<AssetServer>, mut audio_handles: ResMut<AudioHandles>) {
     audio_handles.red = Some(asset_server.load("sounds/buttons/red.ogg"));
     audio_handles.green = Some(asset_server.load("sounds/buttons/green.ogg"));
@@ -525,6 +531,7 @@ fn load_assets(asset_server: Res<AssetServer>, mut audio_handles: ResMut<AudioHa
     audio_handles.incorrect = Some(asset_server.load("sounds/incorrect.ogg"));
 }
 
+/// Play button sounds
 fn play_button_sound(
     mut event_reader: EventReader<ButtonEvent>,
     audio: Res<Audio>,
@@ -546,6 +553,7 @@ fn play_button_sound(
     }
 }
 
+/// Play sounds for game events
 fn play_game_sound(
     mut event_reader: EventReader<SimonEvent>,
     audio: Res<Audio>,
