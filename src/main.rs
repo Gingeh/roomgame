@@ -110,6 +110,7 @@ struct AudioHandles {
     green: Option<Handle<AudioSource>>,
     blue: Option<Handle<AudioSource>>,
     yellow: Option<Handle<AudioSource>>,
+    incorrect: Option<Handle<AudioSource>>,
 }
 
 // I don't like using strings for identifiers
@@ -138,6 +139,7 @@ fn main() {
         .add_system(button_state_manager)
         .add_system(button_controller)
         .add_system(play_button_sound)
+        .add_system(play_game_sound)
 
         // Store the pattern as a resource
         .init_resource::<Pattern>()
@@ -520,6 +522,7 @@ fn load_assets(asset_server: Res<AssetServer>, mut audio_handles: ResMut<AudioHa
     audio_handles.green = Some(asset_server.load("sounds/buttons/green.ogg"));
     audio_handles.blue = Some(asset_server.load("sounds/buttons/blue.ogg"));
     audio_handles.yellow = Some(asset_server.load("sounds/buttons/yellow.ogg"));
+    audio_handles.incorrect = Some(asset_server.load("sounds/incorrect.ogg"));
 }
 
 fn play_button_sound(
@@ -537,6 +540,21 @@ fn play_button_sound(
             Button::Green => &audio_handles.green,
             Button::Blue => &audio_handles.blue,
             Button::Yellow => &audio_handles.yellow,
+        } {
+            audio.play(audio_handle.clone());
+        };
+    }
+}
+
+fn play_game_sound(
+    mut event_reader: EventReader<SimonEvent>,
+    audio: Res<Audio>,
+    audio_handles: Res<AudioHandles>,
+) {
+    for event in event_reader.iter() {
+        if let Some(audio_handle) = match event {
+            SimonEvent::Failure => audio_handles.incorrect.as_ref(),
+            _ => None,
         } {
             audio.play(audio_handle.clone());
         };
