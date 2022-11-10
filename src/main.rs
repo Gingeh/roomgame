@@ -460,8 +460,6 @@ fn validate_buttons(
     }
 }
 
-//FIXME: Buttons don't pop back out if they are the first and last in the pattern
-/// Handles game events to change states and stuff
 fn game_event_handler(
     mut commands: Commands,
     mut event_reader: EventReader<SimonEvent>,
