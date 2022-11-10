@@ -104,6 +104,14 @@ struct Score {
 #[derive(Component)]
 struct Scoreboard;
 
+#[derive(Default)]
+struct AudioHandles {
+    red: Option<Handle<AudioSource>>,
+    green: Option<Handle<AudioSource>>,
+    blue: Option<Handle<AudioSource>>,
+    yellow: Option<Handle<AudioSource>>,
+}
+
 // I don't like using strings for identifiers
 const FIXEDUPDATE: &str = "FixedUpdate";
 
@@ -121,12 +129,15 @@ fn main() {
 
         // Spawn stuff
         .add_startup_system(setup)
+        .add_startup_system(load_assets)
 
         // Manage the buttons
         .add_event::<ButtonEvent>()
+        .init_resource::<AudioHandles>()
         .add_system(button_event_handler)
         .add_system(button_state_manager)
         .add_system(button_controller)
+        .add_system(play_button_sound)
 
         // Store the pattern as a resource
         .init_resource::<Pattern>()
@@ -503,5 +514,33 @@ fn update_scoreboard(score: Res<Score>, mut score_text_query: Query<&mut Text, W
             score_text.sections[1].value = score.current.to_string();
             score_text.sections[3].value = score.high.to_string();
         }
+    }
+}
+
+fn load_assets(asset_server: Res<AssetServer>, mut audio_handles: ResMut<AudioHandles>) {
+    audio_handles.red = Some(asset_server.load("sounds/buttons/red.ogg"));
+    audio_handles.green = Some(asset_server.load("sounds/buttons/green.ogg"));
+    audio_handles.blue = Some(asset_server.load("sounds/buttons/blue.ogg"));
+    audio_handles.yellow = Some(asset_server.load("sounds/buttons/yellow.ogg"));
+}
+
+fn play_button_sound(
+    mut event_reader: EventReader<ButtonEvent>,
+    audio: Res<Audio>,
+    audio_handles: Res<AudioHandles>,
+) {
+    for event in event_reader.iter() {
+        let button = match event {
+            ButtonEvent::Pressed(button) => button,
+            ButtonEvent::Lit(button) => button,
+        };
+        if let Some(audio_handle) = match button {
+            Button::Red => &audio_handles.red,
+            Button::Green => &audio_handles.green,
+            Button::Blue => &audio_handles.blue,
+            Button::Yellow => &audio_handles.yellow,
+        } {
+            audio.play(audio_handle.clone());
+        };
     }
 }
