@@ -93,6 +93,17 @@ struct Pattern(Vec<Button>);
 #[derive(Default)]
 struct Progress(usize);
 
+/// The score to be displayed
+#[derive(Default)]
+struct Score {
+    current: usize,
+    high: usize,
+}
+
+/// Marker component for the scoreboard
+#[derive(Component)]
+struct Scoreboard;
+
 // I don't like using strings for identifiers
 const FIXEDUPDATE: &str = "FixedUpdate";
 
@@ -140,7 +151,11 @@ fn main() {
             FIXEDUPDATE,
             0,
             state_switch_event_handler.run_in_state(SimonState::MonkeyDo),
-        );
+        )
+
+        .init_resource::<Score>()
+        .add_system(update_score)
+        .add_system(update_scoreboard);
 
     // Include an inspector if the `inspector` feature is enabled
     #[cfg(feature = "inspector")]
@@ -154,6 +169,7 @@ fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    asset_server: Res<AssetServer>,
 ) {
     // Camera
     commands
@@ -241,6 +257,46 @@ fn setup(
                 .insert(PreviousButtonState(ButtonState::Inactive))
                 .insert(Button::Yellow);
         });
+
+    let score_textstyle = TextStyle {
+        font: asset_server.load("fonts/comic.ttf"),
+        font_size: 36.0,
+        color: Color::WHITE,
+    };
+
+    commands
+        .spawn_bundle(TextBundle {
+            text: Text::from_sections([
+                TextSection {
+                    value: "Score: ".into(),
+                    style: score_textstyle.clone(),
+                },
+                TextSection {
+                    value: "0".into(),
+                    style: score_textstyle.clone(),
+                },
+                TextSection {
+                    value: "\nHigh Score: ".into(),
+                    style: score_textstyle.clone(),
+                },
+                TextSection {
+                    value: "0".into(),
+                    style: score_textstyle,
+                },
+            ])
+            .with_alignment(TextAlignment::CENTER_RIGHT),
+            style: Style {
+                margin: UiRect {
+                    left: Val::Percent(2.0),
+                    right: Val::Undefined,
+                    top: Val::Undefined,
+                    bottom: Val::Percent(2.0),
+                },
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .insert(Scoreboard);
 }
 
 /// Handles `ButtonEvent`s and sets `ButtonState`s
@@ -423,5 +479,29 @@ fn state_switch_event_handler(mut commands: Commands, state_switch: Option<Res<S
     if state_switch.is_some() {
         commands.remove_resource::<StateSwitch>();
         commands.insert_resource(NextState(SimonState::MonkeySee));
+    }
+}
+
+fn update_score(mut event_reader: EventReader<SimonEvent>, mut score: ResMut<Score>) {
+    for event in event_reader.iter() {
+        match event {
+            SimonEvent::Success => {
+                score.current += 1;
+                if score.current > score.high {
+                    score.high = score.current;
+                }
+            }
+            SimonEvent::Failure => score.current = 0,
+            SimonEvent::Next => {}
+        }
+    }
+}
+
+fn update_scoreboard(score: Res<Score>, mut score_text_query: Query<&mut Text, With<Scoreboard>>) {
+    if score.is_changed() {
+        for mut score_text in score_text_query.iter_mut() {
+            score_text.sections[1].value = score.current.to_string();
+            score_text.sections[3].value = score.high.to_string();
+        }
     }
 }
