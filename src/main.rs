@@ -5,6 +5,7 @@ use std::{f32::consts::PI, mem, time::Duration};
 use bevy::{
     prelude::{shape::Box, *},
     ui::FocusPolicy,
+    window::close_on_esc,
 };
 
 #[cfg(feature = "inspector")]
@@ -129,6 +130,9 @@ fn main() {
 
         // Mouse support
         .add_plugins(DefaultPickingPlugins)
+
+        // Exit on Esc
+        .add_system(close_on_esc)
 
         // Spawn stuff
         .add_startup_system(setup)
