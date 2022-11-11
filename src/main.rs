@@ -1,3 +1,5 @@
+#![windows_subsystem = "windows"]
+
 use std::{f32::consts::PI, mem, time::Duration};
 
 use bevy::{
