@@ -5,7 +5,7 @@ use std::{f32::consts::PI, mem, time::Duration};
 use bevy::{
     prelude::{shape::Box, *},
     ui::FocusPolicy,
-    window::close_on_esc,
+    window::close_on_esc, core_pipeline::bloom::{BloomPlugin, BloomSettings},
 };
 
 #[cfg(feature = "inspector")]
@@ -85,19 +85,19 @@ enum SimonEvent {
 
 /// Resource for ending `MonkeyDo`
 // I don't like this :(
-#[derive(Default)]
+#[derive(Resource, Default)]
 struct StateSwitch;
 
 /// The pattern to remember
-#[derive(Default)]
+#[derive(Resource, Default)]
 struct Pattern(Vec<Button>);
 
 /// Progress along the pattern
-#[derive(Default)]
+#[derive(Resource, Default)]
 struct Progress(usize);
 
 /// The score to be displayed
-#[derive(Default)]
+#[derive(Resource, Default)]
 struct Score {
     current: usize,
     high: usize,
@@ -107,7 +107,7 @@ struct Score {
 #[derive(Component)]
 struct Scoreboard;
 
-#[derive(Default)]
+#[derive(Resource, Default)]
 struct AudioHandles {
     red: Option<Handle<AudioSource>>,
     green: Option<Handle<AudioSource>>,
@@ -192,12 +192,12 @@ fn setup(
 ) {
     // Camera
     commands
-        .spawn_bundle(Camera3dBundle::default())
-        .insert_bundle(PickingCameraBundle::default());
+        .spawn(Camera3dBundle::default())
+        .insert(PickingCameraBundle::default());
 
     // Desk
     commands
-        .spawn_bundle(PbrBundle {
+        .spawn(PbrBundle {
             mesh: meshes.add(Box::new(2.0, 1.0, 1.0).into()),
             material: materials.add(Color::ANTIQUE_WHITE.into()),
             transform: Transform::from_translation(Vec3::new(0.0, -0.6, -2.0))
@@ -208,7 +208,7 @@ fn setup(
         .with_children(|parent| {
             // Desk lamp
             parent
-                .spawn_bundle(SpotLightBundle {
+                .spawn(SpotLightBundle {
                     spot_light: SpotLight {
                         intensity: 100.0,
                         outer_angle: 0.3,
@@ -225,53 +225,53 @@ fn setup(
             // Buttons
             //TODO: Can this be refactored?
             parent
-                .spawn_bundle(PbrBundle {
+                .spawn(PbrBundle {
                     mesh: meshes.add(Box::new(1.0, 1.0, 1.0).into()),
                     material: materials.add(Color::RED.into()),
                     transform: Transform::from_translation(Vec3::new(-0.12, 0.47, -0.12))
                         .with_scale(Vec3::splat(0.2)),
                     ..Default::default()
                 })
-                .insert_bundle(ClickableBundle::default())
+                .insert(ClickableBundle::default())
                 .insert(ButtonState::Inactive)
                 .insert(PreviousButtonState(ButtonState::Inactive))
                 .insert(Button::Red);
 
             parent
-                .spawn_bundle(PbrBundle {
+                .spawn(PbrBundle {
                     mesh: meshes.add(Box::new(1.0, 1.0, 1.0).into()),
                     material: materials.add(Color::GREEN.into()),
                     transform: Transform::from_translation(Vec3::new(-0.12, 0.47, 0.12))
                         .with_scale(Vec3::splat(0.2)),
                     ..Default::default()
                 })
-                .insert_bundle(ClickableBundle::default())
+                .insert(ClickableBundle::default())
                 .insert(ButtonState::Inactive)
                 .insert(PreviousButtonState(ButtonState::Inactive))
                 .insert(Button::Green);
 
             parent
-                .spawn_bundle(PbrBundle {
+                .spawn(PbrBundle {
                     mesh: meshes.add(Box::new(1.0, 1.0, 1.0).into()),
                     material: materials.add(Color::BLUE.into()),
                     transform: Transform::from_translation(Vec3::new(0.12, 0.47, -0.12))
                         .with_scale(Vec3::splat(0.2)),
                     ..Default::default()
                 })
-                .insert_bundle(ClickableBundle::default())
+                .insert(ClickableBundle::default())
                 .insert(ButtonState::Inactive)
                 .insert(PreviousButtonState(ButtonState::Inactive))
                 .insert(Button::Blue);
 
             parent
-                .spawn_bundle(PbrBundle {
+                .spawn(PbrBundle {
                     mesh: meshes.add(Box::new(1.0, 1.0, 1.0).into()),
                     material: materials.add(Color::YELLOW.into()),
                     transform: Transform::from_translation(Vec3::new(0.12, 0.47, 0.12))
                         .with_scale(Vec3::splat(0.2)),
                     ..Default::default()
                 })
-                .insert_bundle(ClickableBundle::default())
+                .insert(ClickableBundle::default())
                 .insert(ButtonState::Inactive)
                 .insert(PreviousButtonState(ButtonState::Inactive))
                 .insert(Button::Yellow);
@@ -284,7 +284,7 @@ fn setup(
     };
 
     commands
-        .spawn_bundle(TextBundle {
+        .spawn(TextBundle {
             text: Text::from_sections([
                 TextSection {
                     value: "Score: ".into(),
