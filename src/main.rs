@@ -192,8 +192,15 @@ fn setup(
 ) {
     // Camera
     commands
-        .spawn(Camera3dBundle::default())
-        .insert(PickingCameraBundle::default());
+        .spawn(Camera3dBundle {
+            camera: Camera {
+                hdr: true,
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .insert(PickingCameraBundle::default())
+        .insert(BloomSettings::default());
 
     // Desk
     commands
