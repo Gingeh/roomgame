@@ -3,9 +3,10 @@
 use std::{f32::consts::PI, mem, time::Duration};
 
 use bevy::{
+    core_pipeline::bloom::BloomSettings,
     prelude::{shape::Box, *},
     ui::FocusPolicy,
-    window::close_on_esc, core_pipeline::bloom::{BloomPlugin, BloomSettings},
+    window::close_on_esc,
 };
 
 #[cfg(feature = "inspector")]
@@ -124,20 +125,15 @@ fn main() {
     app
         // Black background
         .insert_resource(ClearColor(Color::BLACK))
-
         // Default plugins (useful!)
         .add_plugins(DefaultPlugins)
-
         // Mouse support
         .add_plugins(DefaultPickingPlugins)
-
         // Exit on Esc
         .add_system(close_on_esc)
-
         // Spawn stuff
         .add_startup_system(setup)
         .add_startup_system(load_assets)
-
         // Manage the buttons
         .add_event::<ButtonEvent>()
         .init_resource::<AudioHandles>()
@@ -146,11 +142,9 @@ fn main() {
         .add_system(button_controller)
         .add_system(play_button_sound)
         .add_system(play_game_sound)
-
         // Store the pattern as a resource
         .init_resource::<Pattern>()
         .init_resource::<Progress>()
-
         // The "Monkey See" state
         .add_loopless_state(SimonState::MonkeySee)
         .add_enter_system(SimonState::MonkeySee, update_pattern)
@@ -160,7 +154,6 @@ fn main() {
             0,
             show_button.run_in_state(SimonState::MonkeySee),
         )
-
         // The "Monkey Do" state
         .add_event::<SimonEvent>()
         .add_system(press_buttons.run_in_state(SimonState::MonkeyDo))
@@ -171,7 +164,6 @@ fn main() {
             0,
             state_switch_event_handler.run_in_state(SimonState::MonkeyDo),
         )
-
         .init_resource::<Score>()
         .add_system(update_score)
         .add_system(update_scoreboard);
